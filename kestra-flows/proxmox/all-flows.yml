@@ -1,0 +1,219 @@
+- id: proxmox-list-templates
+  namespace: infrastructure
+  revision: 1
+  updated: '2026-11-10T12:06:21.860775Z'
+  description: List Proxmox VM templates
+  inputs:
+  - id: proxmox_password
+    type: STRING
+    description: Proxmox password
+    required: true
+  disabled: false
+  deleted: false
+  draft: false
+  tasks:
+  - id: list_templates
+    type: io.kestra.plugin.proxmox.template.List
+    host: 172.22.95.201
+    node: pve1
+    username: root@pam
+    password: '{{ inputs.proxmox_password }}'
+    verifySsl: 'false'
+  - id: output_templates
+    type: io.kestra.plugin.core.log.Log
+    message: 'Proxmox Template Listing
+
+      =======================
+
+
+      Connection: 172.22.95.201
+
+      Node: pve1
+
+
+      Raw task output:
+
+      {{ outputs.list_templates | toJson }}
+
+      '
+  triggers: []
+- id: proxmox-static-test
+  namespace: infrastructure
+  revision: 4
+  updated: '2026-11-10T12:00:05.259113Z'
+  inputs:
+  - id: proxmox_password
+    type: STRING
+    description: Proxmox password
+    required: true
+  disabled: false
+  deleted: false
+  draft: false
+  tasks:
+  - id: test
+    type: io.kestra.plugin.proxmox.cluster.ListResources
+    host: 172.22.95.201
+    node: pve1
+    username: root@pam
+    password: '{{ inputs.proxmox_password }}'
+    verifySsl: 'false'
+    typeFilter: vm
+  - id: result
+    type: io.kestra.plugin.core.log.Log
+    message: '{{ outputs.test | toJson }}'
+  triggers: []
+- id: proxmox-test-connection
+  namespace: infrastructure
+  revision: 2
+  updated: '2026-11-10T11:53:31.067151Z'
+  inputs:
+  - id: proxmox_host
+    type: STRING
+    required: true
+  - id: proxmox_node
+    type: STRING
+    required: true
+  - id: proxmox_user
+    type: STRING
+    required: true
+  - id: proxmox_password
+    type: STRING
+    required: true
+  disabled: false
+  deleted: false
+  draft: false
+  tasks:
+  - id: test_connection
+    type: io.kestra.plugin.proxmox.cluster.ListResources
+    host: '{{ inputs.proxmox_host }}'
+    node: '{{ inputs.proxmox_node }}'
+    username: '{{ inputs.proxmox_user }}'
+    password: '{{ inputs.proxmox_password }}'
+    verifySsl: 'false'
+    typeFilter: vm
+  - id: show_result
+    type: io.kestra.plugin.core.log.Log
+    message: 'Proxmox connection successful!
+
+      {{ outputs.test_connection | toJson }}
+
+      '
+  triggers: []
+- id: proxmox-vm-from-template
+  namespace: infrastructure
+  revision: 3
+  updated: '2026-11-10T12:32:03.986344Z'
+  description: Clone Ubuntu 24.04 template and provision a VM
+  inputs:
+  - id: proxmox_password
+    type: STRING
+    description: Proxmox password
+    required: true
+  - id: new_vmid
+    type: INT
+    description: Unique VMID for the new VM
+    required: true
+  - id: vm_name
+    type: STRING
+    description: Name for the new VM
+    required: true
+  - id: target_node
+    type: STRING
+    description: Destination Proxmox node
+    required: true
+    defaults: pve1
+  - id: full_clone
+    type: BOOL
+    description: Full clone or linked clone
+    required: true
+    defaults: 'true'
+  - id: start_vm
+    type: BOOL
+    description: Start VM after creation
+    required: true
+    defaults: 'true'
+  disabled: false
+  deleted: false
+  draft: false
+  tasks:
+  - id: clone_vm
+    type: io.kestra.plugin.proxmox.vm.Clone
+    host: 172.22.95.201
+    node: pve1
+    username: root@pam
+    password: '{{ inputs.proxmox_password }}'
+    verifySsl: 'false'
+    vmName: ubuntu2204template
+    newId: '{{ inputs.new_vmid }}'
+    newName: '{{ inputs.vm_name }}'
+    targetNode: '{{ inputs.target_node }}'
+    full: '{{ inputs.full_clone }}'
+  - id: wait_for_clone
+    type: io.kestra.plugin.proxmox.task.WaitForTask
+    host: 172.22.95.201
+    node: pve1
+    username: root@pam
+    password: '{{ inputs.proxmox_password }}'
+    verifySsl: 'false'
+    upid: '{{ outputs.clone_vm.upid }}'
+  - id: configure_vm
+    type: io.kestra.plugin.proxmox.vm.Update
+    host: 172.22.95.201
+    node: '{{ inputs.target_node }}'
+    username: root@pam
+    password: '{{ inputs.proxmox_password }}'
+    verifySsl: 'false'
+    vmName: '{{ inputs.new_vmid }}'
+    cores: '2'
+    memory: '4096'
+    config: '{"cpu":"host","agent":"1"}'
+  - id: start_vm
+    type: io.kestra.plugin.proxmox.vm.Start
+    runIf: '{{ inputs.start_vm }}'
+    host: 172.22.95.201
+    node: '{{ inputs.target_node }}'
+    username: root@pam
+    password: '{{ inputs.proxmox_password }}'
+    verifySsl: 'false'
+    vmName: '{{ inputs.new_vmid }}'
+  - id: wait_for_start
+    type: io.kestra.plugin.proxmox.task.WaitForTask
+    runIf: '{{ inputs.start_vm }}'
+    host: 172.22.95.201
+    node: '{{ inputs.target_node }}'
+    username: root@pam
+    password: '{{ inputs.proxmox_password }}'
+    verifySsl: 'false'
+    upid: '{{ outputs.start_vm.upid }}'
+    timeoutSeconds: '120'
+  - id: get_vm_info
+    type: io.kestra.plugin.proxmox.vm.List
+    host: 172.22.95.201
+    node: '{{ inputs.target_node }}'
+    username: root@pam
+    password: '{{ inputs.proxmox_password }}'
+    verifySsl: 'false'
+  - id: output_vm_info
+    type: io.kestra.plugin.core.log.Log
+    message: 'VM Provisioning Workflow Completed
+
+
+      VMID: {{ inputs.new_vmid }}
+
+      Name: {{ inputs.vm_name }}
+
+      Template: ubuntu24.04template
+
+      Destination: {{ inputs.target_node }}
+
+      Clone type: {{ inputs.full_clone }}
+
+      Start requested: {{ inputs.start_vm }}
+
+
+      VM inventory:
+
+      {{ outputs.get_vm_info | toJson }}
+
+      '
+  triggers: []

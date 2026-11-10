@@ -1,0 +1,39 @@
+id: proxmox-list-templates
+namespace: infrastructure
+revision: 1
+updated: '2026-11-10T12:06:21.860775Z'
+description: List Proxmox VM templates
+inputs:
+- id: proxmox_password
+  type: STRING
+  description: Proxmox password
+  required: true
+disabled: false
+deleted: false
+draft: false
+tasks:
+- id: list_templates
+  type: io.kestra.plugin.proxmox.template.List
+  host: 172.22.95.201
+  node: pve1
+  username: root@pam
+  password: '{{ inputs.proxmox_password }}'
+  verifySsl: 'false'
+- id: output_templates
+  type: io.kestra.plugin.core.log.Log
+  message: 'Proxmox Template Listing
+
+    =======================
+
+
+    Connection: 172.22.95.201
+
+    Node: pve1
+
+
+    Raw task output:
+
+    {{ outputs.list_templates | toJson }}
+
+    '
+triggers: []

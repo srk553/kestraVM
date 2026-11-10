@@ -1,0 +1,7 @@
+{
+  "proxmox_host": "https://YOUR_PROXMOX_IP:8006",
+  "proxmox_user": "root@pam",
+  "proxmox_password": "YOUR_PASSWORD_OR_TOKEN",
+  "proxmox_node": "YOUR_NODE_NAME",
+  "verify_ssl": false
+}

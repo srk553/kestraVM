@@ -1,0 +1,19 @@
+{
+  "proxmox_host": "https://YOUR_PROXMOX_IP:8006",
+  "proxmox_user": "root@pam",
+  "proxmox_password": "YOUR_PASSWORD_OR_TOKEN",
+  "proxmox_node": "YOUR_NODE_NAME",
+  "template_vmid": "9000",
+  "new_vmid": "1001",
+  "vm_name": "my-new-vm",
+  "ssh_public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... YOUR_PUBLIC_KEY",
+  "ci_user": "ubuntu",
+  "memory_mb": "4096",
+  "cores": "2",
+  "disk_size_gb": "32",
+  "storage": "local-lvm",
+  "bridge": "vmbr0",
+  "ip_config": "ip=dhcp",
+  "dns_servers": "8.8.8.8,1.1.1.1",
+  "start_vm": true
+}

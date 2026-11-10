@@ -1,0 +1,37 @@
+id: proxmox-test-connection
+namespace: infrastructure
+revision: 2
+updated: '2026-11-10T11:53:31.067151Z'
+inputs:
+- id: proxmox_host
+  type: STRING
+  required: true
+- id: proxmox_node
+  type: STRING
+  required: true
+- id: proxmox_user
+  type: STRING
+  required: true
+- id: proxmox_password
+  type: STRING
+  required: true
+disabled: false
+deleted: false
+draft: false
+tasks:
+- id: test_connection
+  type: io.kestra.plugin.proxmox.cluster.ListResources
+  host: '{{ inputs.proxmox_host }}'
+  node: '{{ inputs.proxmox_node }}'
+  username: '{{ inputs.proxmox_user }}'
+  password: '{{ inputs.proxmox_password }}'
+  verifySsl: 'false'
+  typeFilter: vm
+- id: show_result
+  type: io.kestra.plugin.core.log.Log
+  message: 'Proxmox connection successful!
+
+    {{ outputs.test_connection | toJson }}
+
+    '
+triggers: []
